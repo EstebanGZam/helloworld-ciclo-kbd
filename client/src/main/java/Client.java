@@ -16,26 +16,32 @@ public class Client {
 		List<String> extraArgs = new ArrayList<>();
 
 		try (Communicator communicator = Util.initialize(args, "client.cfg", extraArgs)) {
-			//com.zeroc.Ice.ObjectPrx base = communicator.stringToProxy("SimplePrinter:default -p 10000");
 			Response response;
-			PrinterPrx service = PrinterPrx
-					.checkedCast(communicator.propertyToProxy("Printer.Proxy"));
+			PrinterPrx service = PrinterPrx.checkedCast(communicator.propertyToProxy("Printer.Proxy"));
 
 			if (service == null) {
 				throw new Error("Invalid proxy");
 			}
-			String username = System.getProperty("user.name");
-			String hostname = Inet4Address.getLocalHost().getHostName();
+			String username = System.getProperty("user.name").replace(" ", "").trim();
+			String hostname = Inet4Address.getLocalHost().getHostName().trim();
 			boolean exit = false;
 			String input;
 
 			while (!exit) {
-				String prefix = username + ":" + hostname + " ";
+				String prefix = username + ":" + hostname + "=>";
+				System.out.println("====================================================================================");
 				System.out.print(prefix);
 				input = scanner.nextLine();
+				long start = System.currentTimeMillis();
 				response = service.printString(prefix + input);
-				exit = input.equalsIgnoreCase("exit");
 				System.out.println("Server response: " + response.value);
+				long latency = System.currentTimeMillis() - start;
+				if (!input.equalsIgnoreCase("exit")) {
+					System.out.println("Processing time: " + response.responseTime + " ms");
+					System.out.println("Latency: " + latency + " ms");
+					System.out.println("Network Performance: " + (latency - response.responseTime) + " ms");
+				}
+				exit = input.equalsIgnoreCase("exit");
 			}
 		} catch (UnknownHostException e) {
 			throw new RuntimeException(e);
