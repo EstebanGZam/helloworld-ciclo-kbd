@@ -9,40 +9,68 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+// Clase principal Client que interactúa con el servicio remoto usando Ice
 public class Client {
+
+	// Scanner para leer la entrada del usuario desde la consola
 	public static Scanner scanner = new Scanner(System.in);
 
+	// Método main: punto de entrada de la aplicación cliente
 	public static void main(String[] args) {
+
+		// Lista de argumentos extra que pueden pasarse durante la inicialización
 		List<String> extraArgs = new ArrayList<>();
 
+		// Bloque try-with-resources para garantizar que el comunicador se cierre correctamente
 		try (Communicator communicator = Util.initialize(args, "client.cfg", extraArgs)) {
-			Response response;
+			Response response; // Variable para almacenar la respuesta del servidor
+			// Crea una instancia del servicio proxy del servidor usando el nombre de proxy configurado
 			PrinterPrx service = PrinterPrx.checkedCast(communicator.propertyToProxy("Printer.Proxy"));
 
+			// Verifica si el proxy es válido, si no, lanza un error
 			if (service == null) {
 				throw new Error("Invalid proxy");
 			}
-			String username = System.getProperty("user.name").replace(" ", "").trim();
-			String hostname = Inet4Address.getLocalHost().getHostName().trim();
-			boolean exit = false;
-			String input;
 
+			// Obtiene el nombre de usuario del sistema, elimina espacios y lo recorta
+			String username = System.getProperty("user.name").replace(" ", "").trim();
+			// Obtiene el hostname de la máquina cliente
+			String hostname = Inet4Address.getLocalHost().getHostName().trim();
+
+			boolean exit = false; // Variable de control para el bucle principal
+			String input; // Variable para almacenar la entrada del usuario
+
+			// Bucle principal que sigue ejecutándose hasta que el usuario ingrese "exit"
 			while (!exit) {
+				// Crea el prefijo que incluye el nombre de usuario y el hostname
 				String prefix = username + ":" + hostname + "=>";
 				System.out.println("====================================================================================");
-				System.out.print(prefix);
-				input = scanner.nextLine();
-				long start = System.currentTimeMillis();
+				System.out.print(prefix); // Imprime el prefijo en la consola
+				input = scanner.nextLine(); // Lee la entrada del usuario
+
+				long start = System.currentTimeMillis(); // Registra el tiempo de inicio para calcular la latencia
+
+				// Envía el mensaje al servidor concatenado con el prefijo y recibe la respuesta
 				response = service.printString(prefix + input);
+
+				// Imprime la respuesta del servidor en la consola
 				System.out.println("Server response: " + response.value);
-				long latency = System.currentTimeMillis() - start;
+
+				long latency = System.currentTimeMillis() - start; // Calcula la latencia total de la operación
+
+				// Si el usuario no ingresó "exit", muestra el tiempo de procesamiento y la latencia
 				if (!input.equalsIgnoreCase("exit")) {
-					System.out.println("Processing time: " + response.responseTime + " ms");
-					System.out.println("Latency: " + latency + " ms");
+					System.out.println("Processing time: " + response.responseTime + " ms"); // Tiempo de procesamiento del servidor
+					System.out.println("Latency: " + latency + " ms"); // Latencia total
+					// Calcula el rendimiento de la red restando el tiempo de procesamiento del tiempo total
 					System.out.println("Network Performance: " + (latency - response.responseTime) + " ms");
 				}
+
+				// Si el usuario ingresó "exit", finaliza el bucle
 				exit = input.equalsIgnoreCase("exit");
 			}
+
+			// Captura y lanza una excepción en caso de que ocurra un error al obtener el hostname
 		} catch (UnknownHostException e) {
 			throw new RuntimeException(e);
 		}
