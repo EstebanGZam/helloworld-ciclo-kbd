@@ -20,6 +20,8 @@ public class Client {
 
 		// Lista de argumentos extra que pueden pasarse durante la inicialización
 		List<String> extraArgs = new ArrayList<>();
+		// Lista para almacenar las latencias
+		List<Long> latencies = new ArrayList<>();
 
 		// Bloque try-with-resources para garantizar que el comunicador se cierre correctamente
 		try (Communicator communicator = Util.initialize(args, "client.cfg", extraArgs)) {
@@ -57,6 +59,7 @@ public class Client {
 				System.out.println("Server response: " + response.value);
 
 				long latency = System.currentTimeMillis() - start; // Calcula la latencia total de la operación
+				latencies.add(latency); // Almacena la latencia en la lista
 
 				// Si el usuario no ingresó "exit", muestra el tiempo de procesamiento y la latencia
 				if (!input.equalsIgnoreCase("exit")) {
@@ -64,6 +67,16 @@ public class Client {
 					System.out.println("Latency: " + latency + " ms"); // Latencia total
 					// Calcula el rendimiento de la red restando el tiempo de procesamiento del tiempo total
 					System.out.println("Network Performance: " + (latency - response.responseTime) + " ms");
+					// Calcula el jitter si hay al menos dos latencias
+					if (latencies.size() > 1) {
+						long jitter = 0;
+						for (int i = 1; i < latencies.size(); i++) {
+							jitter += Math.abs(latencies.get(i) - latencies.get(i - 1));
+						}
+						jitter /= (latencies.size() - 1); // Promedio del jitter
+						System.out.println("Jitter: " + jitter + " ms");
+					}
+
 				}
 
 				// Si el usuario ingresó "exit", finaliza el bucle
