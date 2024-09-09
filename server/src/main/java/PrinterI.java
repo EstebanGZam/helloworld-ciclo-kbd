@@ -125,7 +125,8 @@ public class PrinterI implements Demo.Printer {
 			process.waitFor(); // Espera a que el proceso termine
 			return series.toString(); // Devuelve la salida completa del comando
 		} catch (Exception errorConsole) {
-			return "The command is incorrect"; // Si hay un error, devuelve un mensaje de error
+			// Si hay un error, se devuelve una excepción que indica que la solicitud no se procesó correctamente
+			throw new RuntimeException(errorConsole);
 		}
 	}
 
