@@ -2,10 +2,8 @@ import com.zeroc.Ice.Communicator;
 import com.zeroc.Ice.ObjectAdapter;
 import com.zeroc.Ice.Util;
 
-// Clase principal Server, que actúa como servidor en la arquitectura Ice
 public class Server {
 
-	// Método main: punto de entrada del servidor
 	public static void main(String[] args) {
 		// Lista para almacenar argumentos extra que se puedan pasar durante la ejecución del servidor
 		java.util.List<String> extraArgs = new java.util.ArrayList<>();

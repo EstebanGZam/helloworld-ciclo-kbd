@@ -64,13 +64,13 @@ public class PrinterI implements Demo.Printer {
 		}
 	}
 
-	// Método recursivo para calcular el número de Fibonacci utilizando memoización
+	// Método recursivo para calcular el número de Fibonacci
 	public static long fibonacci(int num, long[] memo) {
 		if (num == 0 || num == 1) { // Casos base: Fibonacci de 0 es 0, y Fibonacci de 1 es 1
 			return num;
 		}
 		if (memo[num] == 0) { // Si no se ha calculado antes, lo calcula
-			memo[num] = fibonacci(num - 1, memo) + fibonacci(num - 2, memo); // Guarda el resultado en el arreglo memo
+			memo[num] = fibonacci(num - 1, memo) + fibonacci(num - 2, memo); // Guarda el resultado en el arreglo
 		}
 		return memo[num]; // Devuelve el valor de Fibonacci
 	}

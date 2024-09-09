@@ -9,13 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-// Clase principal Client que interactúa con el servicio remoto usando Ice
 public class Client {
 
 	// Scanner para leer la entrada del usuario desde la consola
 	public static Scanner scanner = new Scanner(System.in);
 
-	// Método main: punto de entrada de la aplicación cliente
 	public static void main(String[] args) {
 
 		// Lista de argumentos extra que pueden pasarse durante la inicialización
