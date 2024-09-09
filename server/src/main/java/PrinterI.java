@@ -3,6 +3,8 @@ import com.zeroc.Ice.Current;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.text.DecimalFormat;
+
 
 public class PrinterI implements Demo.Printer {
 
@@ -10,6 +12,8 @@ public class PrinterI implements Demo.Printer {
 	public Response printString(String s, Current current) {
 		long processTime; // Variable para almacenar el tiempo de procesamiento
 		long start = System.currentTimeMillis(); // Registra el tiempo de inicio del procesamiento
+
+		Server.setTotalRequests(Server.getTotalRequests() + 1);
 
 		System.out.println("====================================================================================");
 		System.out.println("Message: " + s); // Imprime el mensaje recibido
@@ -38,6 +42,13 @@ public class PrinterI implements Demo.Printer {
 
 		processTime = System.currentTimeMillis() - start; // Calcula el tiempo total de procesamiento
 		System.out.println("Response time: " + processTime + "ms"); // Imprime el tiempo de respuesta
+
+		Server.setResolvedRequests(Server.getResolvedRequests() + 1);
+		Server.setProcessTime(Server.getProcessTime() + processTime);
+		DecimalFormat df = new DecimalFormat("#.00");
+		System.out.println("Throughput: " + df.format(Server.getTotalRequests() / ((double) Server.getProcessTime() / 1000.0)) + " request/s");
+		System.out.println("Unprocess Rate: " + df.format((Server.getTotalRequests() - Server.getResolvedRequests()) / (double) Server.getTotalRequests() * 100) + " %");
+
 		return new Response(processTime, serverResponse); // Devuelve la respuesta final con el tiempo de procesamiento
 	}
 
