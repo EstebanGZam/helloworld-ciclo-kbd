@@ -5,8 +5,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 
-
 public class PrinterI implements Demo.Printer {
+
+	// Formateador de decimales para mostrar los resultados con dos decimales
 	private final DecimalFormat df = new DecimalFormat("#.00");
 
 	// Método principal que recibe un mensaje (s), lo procesa y devuelve una respuesta de tipo Response
@@ -14,19 +15,22 @@ public class PrinterI implements Demo.Printer {
 		long processTime; // Variable para almacenar el tiempo de procesamiento
 		long start = System.currentTimeMillis(); // Registra el tiempo de inicio del procesamiento
 
+		// Incrementa el contador de solicitudes totales en el servidor
 		Server.setTotalRequests(Server.getTotalRequests() + 1);
 
+		// Imprime un separador para cada nueva solicitud
 		System.out.println("====================================================================================");
 		System.out.println("Message: " + s); // Imprime el mensaje recibido
 
 		// Divide el mensaje en dos partes separadas por "=>"
 		String[] msgArray = s.split("=>");
 
-		String message = msgArray[1]; // La segunda parte del mensaje es la que se procesa
+		// La segunda parte del mensaje es la que se procesa
+		String message = msgArray[1];
 		String serverResponse; // Respuesta del servidor
 
 		try {
-			// Intenta convertir el mensaje a un número y calcula si es un número natural
+			// Intenta convertir el mensaje a un número y verifica si es un número natural
 			serverResponse = checkIfNaturalNumber(Integer.parseInt(message));
 		} catch (NumberFormatException e) {
 			// Si el mensaje no es un número, maneja la entrada no numérica
@@ -35,21 +39,30 @@ public class PrinterI implements Demo.Printer {
 
 		System.out.println(serverResponse); // Imprime la respuesta del servidor
 
-		processTime = System.currentTimeMillis() - start; // Calcula el tiempo total de procesamiento
+		// Calcula el tiempo total de procesamiento
+		processTime = System.currentTimeMillis() - start;
 
+		// Incrementa el contador de solicitudes resueltas en el servidor
 		Server.setResolvedRequests(Server.getResolvedRequests() + 1);
+
+		// Acumula el tiempo total de procesamiento en el servidor
 		Server.setProcessTime(Server.getProcessTime() + processTime);
 
-		return new Response(processTime, calculateThroughput(), calculateUnprocessRate(), serverResponse); // Devuelve la respuesta final con el tiempo de procesamiento
+		// Devuelve la respuesta final con el tiempo de procesamiento, throughput y tasa de solicitudes no procesadas
+		return new Response(processTime, calculateThroughput(), calculateUnprocessRate(), serverResponse);
 	}
 
+	// Método para calcular la tasa de solicitudes no procesadas
 	private double calculateUnprocessRate() {
+		// Calcula la tasa de solicitudes no procesadas como porcentaje
 		double unprocessRate = (Server.getTotalRequests() - Server.getResolvedRequests()) / (double) Server.getTotalRequests() * 100;
 		System.out.println("Unprocess Rate: " + df.format(unprocessRate) + " %");
 		return unprocessRate;
 	}
 
+	// Método para calcular el throughput (número de solicitudes por segundo)
 	private double calculateThroughput() {
+		// Si el tiempo de procesamiento total es cero, el throughput es NaN, de lo contrario, se calcula el throughput
 		double throughput = Server.getProcessTime() == 0 ? Double.NaN : Server.getTotalRequests() / ((double) Server.getProcessTime() / 1000.0);
 		System.out.println("Throughput: " + df.format(throughput) + " request/s");
 		return throughput;
