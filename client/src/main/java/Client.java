@@ -11,98 +11,143 @@ import java.util.Scanner;
 
 public class Client {
 
-	// Scanner para leer la entrada del usuario desde la consola
-	private static final Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
+    private static List<Long> latencies = new ArrayList<>();
+    private static List<Long> processingTimes = new ArrayList<>();
+    private static List<Long> networkPerformance = new ArrayList<>();
+    private static List<Long> jitters = new ArrayList<>();
+    private static List<Double> missingRates = new ArrayList<>();
+    private static List<String> sentMessages = new ArrayList<>();
+    private static List<Double> unprocessRates = new ArrayList<>();
+    private static List<Double> throughput = new ArrayList<>();
 
-	// Contador para el número de solicitudes exitosas
-	private static int successfulRequests = 0;
+    private static int successfulRequests = 0;
+    private static int totalRequests = 0;
+    private static PrinterPrx service;
 
-	// Contador para el número total de solicitudes
-	private static int totalRequests = 0;
+    public static void main(String[] args) {
+        List<String> extraArgs = new ArrayList<>();
+        try (Communicator communicator = Util.initialize(args, "client.cfg", extraArgs)) {
+            service = PrinterPrx.checkedCast(communicator.propertyToProxy("Printer.Proxy"));
+            if (service == null) {
+                throw new Error("Invalid proxy");
+            }
 
-	public static void main(String[] args) {
+            displayMenu(communicator);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-		// Lista de argumentos extra que pueden pasarse durante la inicialización
-		List<String> extraArgs = new ArrayList<>();
-		// Lista para almacenar las latencias
-		List<Long> latencies = new ArrayList<>();
+    private static void displayMenu(Communicator communicator) throws UnknownHostException {
+        boolean exit = false;
+        while (!exit) {
+            System.out.println("\n====================================================================================");
+            System.out.println("----- MAIN MENU -------");
+            System.out.println("1. Send a message to the server");
+            System.out.println("2. Generate performance report");
+            System.out.println("3. Exit");
 
-		// Bloque try-with-resources para garantizar que el comunicador se cierre correctamente
-		try (Communicator communicator = Util.initialize(args, "client.cfg", extraArgs)) {
-			Response response; // Variable para almacenar la respuesta del servidor
-			// Crea una instancia del servicio proxy del servidor usando el nombre de proxy configurado
-			PrinterPrx service = PrinterPrx.checkedCast(communicator.propertyToProxy("Printer.Proxy"));
+            System.out.print("Choose an option: ");
+            String choice = scanner.nextLine().trim();
 
-			// Verifica si el proxy es válido, si no, lanza un error
-			if (service == null) {
-				throw new Error("Invalid proxy");
-			}
+            switch (choice) {
+                case "1":
+                    sendMessageToServer(communicator);
+                    break;
+                case "2":
+                    generateReport();
+                    break;
+                case "3":
+                    exit = true;
+                    break;
+                default:
+                    System.out.println("Invalid option. Please try again.");
+            }
+        }
+    }
 
-			// Obtiene el nombre de usuario del sistema, elimina espacios y lo recorta
-			String username = System.getProperty("user.name").replace(" ", "").trim();
-			// Obtiene el hostname de la máquina cliente
-			String hostname = Inet4Address.getLocalHost().getHostName().trim();
+    private static void sendMessageToServer(Communicator communicator) throws UnknownHostException {
+        String username = System.getProperty("user.name").replace(" ", "").trim();
+        String hostname = Inet4Address.getLocalHost().getHostName().trim();
 
-			boolean exit = false; // Variable de control para el bucle principal
-			String input; // Variable para almacenar la entrada del usuario
+        boolean exit = false;
+        while (!exit) {
+            String prefix = username + ":" + hostname + "=>";
+            System.out.println("====================================================================================");
+            System.out.print(prefix);
+            String input;
+            do {
 
-			// Bucle principal que sigue ejecutándose hasta que el usuario ingrese "exit"
-			while (!exit) {
-				// Crea el prefijo que incluye el nombre de usuario y el hostname
-				String prefix = username + ":" + hostname + "=>";
-				System.out.println("====================================================================================");
-				System.out.print(prefix); // Imprime el prefijo en la consola
-				input = scanner.nextLine(); // Lee la entrada del usuario
+                input = scanner.nextLine();
+            } while (input.equals(""));
 
-				long start = System.currentTimeMillis(); // Registra el tiempo de inicio para calcular la latencia
-				try {
-					// Envía el mensaje al servidor concatenado con el prefijo y recibe la respuesta
-					response = service.printString(prefix + input);
+            exit = input.equalsIgnoreCase("exit");
+            if (exit) {
+                System.out.println("Thank you for using our services. See you soon!");
+            } else {
+                sentMessages.add(input);
 
-					// Imprime la respuesta del servidor en la consola
-					System.out.println("Server response: " + response.value);
+                long start = System.currentTimeMillis();
+                try {
+                    Response response = service.printString(prefix + input);
+                    long latency = System.currentTimeMillis() - start;
+                    latencies.add(latency);
 
-					long latency = System.currentTimeMillis() - start; // Calcula la latencia total de la operación
-					latencies.add(latency); // Almacena la latencia en la lista
+                    long processingTime = response.responseTime;
+                    processingTimes.add(processingTime);
 
-					// Si el usuario no ingresó "exit", muestra el tiempo de procesamiento y la latencia
-					if (!input.equalsIgnoreCase("exit")) {
-						System.out.println("Processing time: " + response.responseTime + " ms"); // Tiempo de procesamiento del servidor
-						System.out.println("Latency: " + latency + " ms"); // Latencia total
-						// Calcula el rendimiento de la red restando el tiempo de procesamiento del tiempo total
-						System.out.println("Network Performance: " + (latency - response.responseTime) + " ms");
-						// Calcula el jitter si hay al menos dos latencias
-						if (latencies.size() > 1) {
-							long jitter = 0;
-							for (int i = 1; i < latencies.size(); i++) {
-								jitter += Math.abs(latencies.get(i) - latencies.get(i - 1));
-							}
-							jitter /= (latencies.size() - 1); // Promedio del jitter
-							System.out.println("Jitter: " + jitter + " ms");
-						}
-						successfulRequests++;
-						totalRequests++;
-						showFailureStatistics();
-					}
-				} catch (RuntimeException e) {
-					totalRequests++;
-					System.err.println("Request could not be processed");
-					showFailureStatistics();
-				}
+                    long netPerformance = latency - processingTime;
+                    networkPerformance.add(netPerformance);
 
-				// Si el usuario ingresó "exit", finaliza el bucle
-				exit = input.equalsIgnoreCase("exit");
-			}
+                    System.out.println("Server response: " + response.value);
+                    System.out.println("Processing time: " + processingTime + " ms");
+                    System.out.println("Latency: " + latency + " ms");
+                    System.out.println("Network Performance: " + netPerformance + " ms");
 
-			// Captura y lanza una excepción en caso de que ocurra un error al obtener el hostname
-		} catch (UnknownHostException e) {
-			throw new RuntimeException(e);
-		}
-	}
+                    if (latencies.size() > 1) {
+                        calculateJitter();
+                    }
+                    successfulRequests++;
+                    totalRequests++;
 
-	private static void showFailureStatistics() {
-		// Calcular la Tasa de Pérdida (Missing Rate)
-		double missingRate = (double) (totalRequests - successfulRequests) / totalRequests * 100;
-		System.out.println("Missing Rate: " + missingRate + " %");
-	}
+                    calculateMissingRate();
+
+
+                } catch (RuntimeException e) {
+                    totalRequests++;
+                    System.err.println("Request could not be processed");
+                    calculateMissingRate();
+                }
+            }
+        }
+    }
+
+    private static void calculateJitter() {
+        long jitter = 0;
+        for (int i = 1; i < latencies.size(); i++) {
+            jitter += Math.abs(latencies.get(i) - latencies.get(i - 1));
+        }
+        jitter /= (latencies.size() - 1);
+        jitters.add(jitter);  // Store jitter value
+        System.out.println("Jitter: " + jitter + " ms");
+    }
+
+    private static void calculateMissingRate() {
+        double missingRate = (double) (totalRequests - successfulRequests) / totalRequests * 100;
+        missingRates.add(missingRate);  // Store missing rate value
+        System.out.println("Missing Rate: " + missingRate + " %");
+    }
+
+    private static void generateReport() {
+        System.out.println("\n--- Performance Report ---");
+        System.out.println("| Sent Message                                      | Latency (ms) | Processing Time (ms) | Net Performance (ms) | Jitter (ms) | Missing Rate (%) |");
+        System.out.println("|---------------------------------------------------|--------------|----------------------|----------------------|-------------|------------------|");
+
+        for (int i = 0; i < latencies.size(); i++) {
+            System.out.printf("| %-51s | %12d | %22d | %22d | %11d | %16.2f |\n",
+                    sentMessages.get(i), latencies.get(i), processingTimes.get(i), networkPerformance.get(i),
+                    (i == 0 ? 0 : jitters.get(i - 1)), missingRates.get(i));
+        }
+    }
 }
