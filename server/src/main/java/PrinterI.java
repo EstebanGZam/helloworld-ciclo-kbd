@@ -36,12 +36,9 @@ public class PrinterI implements Demo.Printer {
 		System.out.println(serverResponse); // Imprime la respuesta del servidor
 
 		processTime = System.currentTimeMillis() - start; // Calcula el tiempo total de procesamiento
-		if (serverResponse == null) {
-			serverResponse = "You sent a not valid message, please try again";
-		} else {
-			Server.setResolvedRequests(Server.getResolvedRequests() + 1);
-			Server.setProcessTime(Server.getProcessTime() + processTime);
-		}
+
+		Server.setResolvedRequests(Server.getResolvedRequests() + 1);
+		Server.setProcessTime(Server.getProcessTime() + processTime);
 
 		return new Response(processTime, calculateThroughput(), calculateUnprocessRate(), serverResponse); // Devuelve la respuesta final con el tiempo de procesamiento
 	}
@@ -109,7 +106,7 @@ public class PrinterI implements Demo.Printer {
 
 	// Método para manejar entradas no numéricas
 	private String handleNonNumericInput(String message) {
-		String output = null; // Variable para almacenar el resultado
+		String output; // Variable para almacenar el resultado
 		try {
 			if (message.startsWith("listifs")) { // Comando "listifs" para listar interfaces de red
 				String os = System.getProperty("os.name").toLowerCase(); // Obtiene el nombre del sistema operativo
@@ -118,11 +115,13 @@ public class PrinterI implements Demo.Printer {
 				output = handleListPortsCommand(message); // Llama al método para manejar los puertos
 			} else if (message.startsWith("!")) { // Comando de shell, indicado por "!"
 				output = printCommand(message.substring(1).split("\\s+")); // Ejecuta el comando shell
+			} else {
+				throw new Exception("Invalid command: " + message);
 			}
 
 		} catch (Exception errorConsole) {
 			// Si hay un error, se devuelve una excepción que indica que la solicitud no se procesó correctamente
-			throw new RuntimeException(errorConsole);
+			throw new RuntimeException(errorConsole.getMessage());
 		}
 		return output; // Devuelve el resultado
 	}
