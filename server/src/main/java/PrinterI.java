@@ -3,6 +3,7 @@ import com.zeroc.Ice.Current;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 
 public class PrinterI implements Demo.Printer {
@@ -74,10 +75,10 @@ public class PrinterI implements Demo.Printer {
 			StringBuilder response = new StringBuilder(); // Builder para generar la respuesta
 
 			// Genera una secuencia de Fibonacci
-			long[] fibonacciArray = new long[n];
+			BigInteger[] fibonacciArray = new BigInteger[n];
 			response.append("\nFibonacci (").append(n).append("): ");
 			for (int i = 0; i < n; i++) {
-				fibonacciArray[i] = fibonacci(i, new long[n]); // Llama al método recursivo de Fibonacci
+				fibonacciArray[i] = fibonacci(i, new BigInteger[n]); // Llama al método recursivo de Fibonacci
 				response.append(fibonacciArray[i]).append(" "); // Agrega el número de Fibonacci a la respuesta
 			}
 
@@ -92,12 +93,12 @@ public class PrinterI implements Demo.Printer {
 	}
 
 	// Método recursivo para calcular el número de Fibonacci
-	public static long fibonacci(int num, long[] memo) {
+	public static BigInteger fibonacci(int num, BigInteger[] memo) {
 		if (num == 0 || num == 1) { // Casos base: Fibonacci de 0 es 0, y Fibonacci de 1 es 1
-			return num;
+			return BigInteger.valueOf(num);
 		}
-		if (memo[num] == 0) { // Si no se ha calculado antes, lo calcula
-			memo[num] = fibonacci(num - 1, memo) + fibonacci(num - 2, memo); // Guarda el resultado en el arreglo
+		if (memo[num] == null) { // Si no se ha calculado antes, lo calcula
+			memo[num] = fibonacci(num - 1, memo).add(fibonacci(num - 2, memo)); // Guarda el resultado en el arreglo
 		}
 		return memo[num]; // Devuelve el valor de Fibonacci
 	}
